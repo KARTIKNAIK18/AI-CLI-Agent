@@ -1,10 +1,10 @@
 import os
 from openai import OpenAI
 import json
-from pydantic import BaseModel
 from dotenv import load_dotenv
 
 
+load_dotenv('../.env')
 
 # model_name = "qwen3-vl:2b"
 model_name = "openai/gpt-5"
@@ -12,7 +12,7 @@ model_name = "openai/gpt-5"
 base_url = "https://models.github.ai/inference"
 client = OpenAI(
     base_url=base_url,
-    api_key=load_dotenv('../env')
+    api_key=os.getenv('GITHUB_TOKEN')
 )
 
 
@@ -53,6 +53,10 @@ SYSTEM_MESSAGE = """
         "content": "To list all files, I will use the 'ls' command in the terminal."
     }
     {
+        "steps": "TOOL",
+        "content": "To use the ls command, I will use the run_cmnd tool."
+    }
+    {
         "steps": "SOLVE",
         "tool": "run_cmnd",
         "input": "ls"
@@ -66,35 +70,65 @@ SYSTEM_MESSAGE = """
         "content": "The files in the current directory are: file1.txt, file2.txt, script.py"
     }
 """
-user_input  = input("Enter your query: ")
 
 def run_cmnd(cmnd: str):
     result = os.system(cmnd)
     return result
 
-try:
-    response = client.chat.completions.create(
-        model = model_name,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": SYSTEM_MESSAGE},
-            {"role": "user", "content": user_input}
-            
-        ]    
-    )
+message_hist = [
+    {"role": "system", "content": SYSTEM_MESSAGE }
+]
 
-    raw_response = response.choices[0].message.content
+
+avilable_tools = {
+    "run_cmnd": run_cmnd
+}
+
+user_input  = input("Enter your query: ")
+
+while True:
     try:
-        output = json.loads(raw_response)
-        print("AI Response:", output)
-    except json.JSONDecodeError:
-        print("Failed to parse JSON response:", raw_response)
-    if output.get("steps") == "OUTPUT":
-        print("Final Output:", output.get("content"))
+        response = client.chat.completions.create(
+            model = model_name,
+            response_format={"type": "json_object"},
+            messages=message_hist   
+        )
 
-except Exception as e:
-    print("Error:", str(e))
-    
+        raw_response = response.choices[0].message.content
+        try:
+            output = json.loads(raw_response)
+            print("AI Response:", output)
+
+            message_hist.append({"role": "assistant", "content": raw_response})
+        except json.JSONDecodeError:
+            print("Failed to parse JSON response:", raw_response)
+
+        if output.get("steps") == "START":
+            print("Starting:", output.get("content"))
+            message_hist.append({"role": "assistant", "content": json.dumps(output)})
+            continue
+        if output.get("steps") == "TOOL":
+            tool_to_call = output.get("tool")
+            tool_input = output.get("input")
+            print(f"🔧 TOOL: {tool_to_call} with input {tool_input}")
+
+            tool_res = avilable_tools[tool_to_call](tool_input)
+            print(f"🛠️ TOOL RESULT: {tool_res}")
+        if output.get("steps") == "PLAN":
+            print("Planning:", output.get("content"))
+            message_hist.append({"role": "assistant", "content": json.dumps(output)})
+            continue
+
+        if output.get("steps") == "SOLVE":
+            print("Final Output:", output.get("content"))
+
+        if output.get("steps") == "OUTPUT":
+            print("Final Output:", output.get("content"))
+            break
+    except Exception as e:
+        print("Error:", str(e))
+        break
+        
 
 
 
