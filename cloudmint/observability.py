@@ -41,4 +41,3 @@ class RequestMetricsMiddleware(BaseHTTPMiddleware):
             },
         )
         return response
-

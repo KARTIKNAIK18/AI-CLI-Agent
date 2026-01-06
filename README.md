@@ -32,4 +32,3 @@ State is persisted to `cloudmint_state.json` by default. Configure behavior with
 - `CLOUDMINT_LOG_LEVEL` — logging level (default `INFO`).
 - `CLOUDMINT_AGENT_MODE` — `local` (deterministic stub) or future remote modes.
 - `CLOUDMINT_PERSIST_STATE` — disable disk persistence when set to `false`.
-

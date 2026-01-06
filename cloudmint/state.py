@@ -114,4 +114,3 @@ class StateStore:
     def snapshot(self) -> Dict[str, Any]:
         with self._lock:
             return {"jobs": dict(self.jobs), "workflows": dict(self.workflows)}
-

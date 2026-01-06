@@ -24,4 +24,3 @@ class Metrics:
     def snapshot(self) -> Dict[str, int]:
         with self._lock:
             return dict(self._counters)
-

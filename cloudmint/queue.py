@@ -57,4 +57,3 @@ class TaskQueue:
 
     def size(self) -> int:
         return self._queue.qsize()
-

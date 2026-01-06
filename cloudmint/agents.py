@@ -20,4 +20,3 @@ class AIAgent:
         # Future extension: plug in hosted models via env configuration
         await asyncio.sleep(0.01)
         return {"agent": settings.agent_model or "cloudmint-generic", "echo": prompt, "context": context or {}}
-
