@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import threading
 import time
@@ -39,8 +40,11 @@ class StateStore:
                     data = json.load(handle)
                 self.jobs = data.get("jobs", {})
                 self.workflows = data.get("workflows", {})
-            except Exception:
-                # Fallback to empty in case of corruption, preserving startup
+            except (json.JSONDecodeError, OSError) as exc:
+                logging.getLogger("cloudmint.state").warning(
+                    "failed to load state file, starting clean",
+                    extra={"path": self._path, "error": str(exc)},
+                )
                 self.jobs = {}
                 self.workflows = {}
 

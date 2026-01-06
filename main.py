@@ -1,5 +1,4 @@
 import uvicorn
-
 from cloudmint.app import app
 
 

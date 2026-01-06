@@ -1,7 +1,7 @@
 import logging
 import time
 import uuid
-from typing import Callable
+from typing import Awaitable, Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -21,7 +21,7 @@ class RequestMetricsMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.metrics = metrics
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:  # type: ignore[override]
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:  # type: ignore[override]
         request_id = str(uuid.uuid4())
         request.state.request_id = request_id
         start = time.monotonic()

@@ -94,7 +94,7 @@ class TaskExecutor:
         response = self._run_coroutine(self.agent.run(prompt, context=context))
         return {"agent_response": response}
 
-    def _run_coroutine(self, coroutine):
+    def _run_coroutine(self, coroutine: Any) -> Any:
         loop = getattr(self._thread_local, "loop", None)
         if loop is None or loop.is_closed():
             loop = asyncio.new_event_loop()

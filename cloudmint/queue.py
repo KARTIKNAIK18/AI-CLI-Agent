@@ -18,7 +18,7 @@ class TaskQueue:
         self._state = state
         self._metrics = metrics
         self._handler = handler
-        self._queue: "queue.Queue[Dict[str, Any]]" = queue.Queue()
+        self._queue: queue.Queue[Dict[str, Any]] = queue.Queue()
         self._stop = threading.Event()
         self._worker = threading.Thread(target=self._run, daemon=True)
         self._worker.start()
