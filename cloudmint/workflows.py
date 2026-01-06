@@ -1,4 +1,5 @@
 import asyncio
+import threading
 import time
 import uuid
 from typing import Any, Dict, List, Optional
@@ -68,6 +69,7 @@ class TaskExecutor:
         self.metrics = metrics
         self.workflow_engine = workflow_engine
         self.agent = agent
+        self._thread_local = threading.local()
 
     def __call__(self, task: Dict[str, Any]) -> Any:
         job_type = task.get("type", "noop")
@@ -82,13 +84,20 @@ class TaskExecutor:
         workflow_id = payload["workflow_id"]
         run_id = payload["run_id"]
         steps = payload.get("steps", [])
-
-        result = asyncio.run(self.workflow_engine.execute_steps(workflow_id, run_id, steps))
+        result = self._run_coroutine(self.workflow_engine.execute_steps(workflow_id, run_id, steps))
         return result
 
     def _run_agent_task(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         prompt = payload.get("prompt", "")
         context = payload.get("context")
         self.metrics.inc("agents_invoked")
-        response = asyncio.run(self.agent.run(prompt, context=context))
+        response = self._run_coroutine(self.agent.run(prompt, context=context))
         return {"agent_response": response}
+
+    def _run_coroutine(self, coroutine):
+        loop = getattr(self._thread_local, "loop", None)
+        if loop is None or loop.is_closed():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            self._thread_local.loop = loop
+        return loop.run_until_complete(coroutine)
