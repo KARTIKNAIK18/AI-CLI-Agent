@@ -1,3 +1,4 @@
+import asyncio
 import time
 import uuid
 from typing import Any, Dict, List, Optional
@@ -56,15 +57,6 @@ class WorkflowEngine:
         return {"steps": results}
 
     async def _sleep(self, duration: float) -> None:
-        if duration <= 0:
-            return
-        await self.agent.run("noop") if duration < 0.01 else await self.agent.run("sleep")
-        # ensure actual wait for non-trivial durations
-        await self._async_sleep(duration)
-
-    async def _async_sleep(self, duration: float) -> None:
-        import asyncio
-
         await asyncio.sleep(duration)
 
 
@@ -90,17 +82,13 @@ class TaskExecutor:
         workflow_id = payload["workflow_id"]
         run_id = payload["run_id"]
         steps = payload.get("steps", [])
-        import asyncio
 
         result = asyncio.run(self.workflow_engine.execute_steps(workflow_id, run_id, steps))
         return result
 
     def _run_agent_task(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        import asyncio
-
         prompt = payload.get("prompt", "")
         context = payload.get("context")
         self.metrics.inc("agents_invoked")
         response = asyncio.run(self.agent.run(prompt, context=context))
         return {"agent_response": response}
-

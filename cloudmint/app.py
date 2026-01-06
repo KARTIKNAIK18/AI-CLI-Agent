@@ -1,5 +1,5 @@
-import logging
 import uuid
+from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -49,16 +49,18 @@ def get_app() -> FastAPI:
     executor = TaskExecutor(state, metrics, workflow_engine, agent)
     task_queue = TaskQueue(state, metrics, executor)
 
+    @asynccontextmanager
+    async def lifespan(_: FastAPI):
+        yield
+        task_queue.stop()
+
     app = FastAPI(
         title="Cloudmint",
         version="1.0.0",
         description="Unified REST, jobs, workflows, and AI agent backend.",
+        lifespan=lifespan,
     )
     app.add_middleware(RequestMetricsMiddleware, metrics=metrics)
-
-    @app.on_event("shutdown")
-    def _shutdown() -> None:
-        task_queue.stop()
 
     def get_state() -> StateStore:
         return state
@@ -122,4 +124,3 @@ def get_app() -> FastAPI:
 
 
 app = get_app()
-
